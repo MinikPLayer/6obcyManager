@@ -171,7 +171,7 @@ namespace _6obcyManager
         static string regionStr = "12"; // małopolska
         static void Main(string[] args)
         {
-            ParseStrings();
+            //ParseStrings();
 
             SoundPlayer alert = new SoundPlayer("alert.wav");
             SoundPlayer error = new SoundPlayer("error.wav");
