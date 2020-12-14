@@ -173,14 +173,15 @@ namespace _6obcyManager
         {
             //ParseStrings();
 
-            SoundPlayer alert = new SoundPlayer("alert.wav");
-            SoundPlayer error = new SoundPlayer("error.wav");
+
 
             string dir = Directory.GetCurrentDirectory();
             if(!File.Exists(Path.Combine(dir, "chromedriver.exe")))
             {
                 dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "6obcy");
             }
+            SoundPlayer alert = new SoundPlayer("alert.wav");
+            SoundPlayer error = new SoundPlayer("error.wav");
             using (ChromeDriver driver = new ChromeDriver(dir))
             {
                 //driver.Navigate("https://6obcy.org");
