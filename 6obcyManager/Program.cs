@@ -158,9 +158,9 @@ namespace _6obcyManager
             }
         }
 
-        static void LoadConfig()
+        static void LoadConfig(string dir)
         {
-            string[] lines = File.ReadAllLines("config.ini");
+            string[] lines = File.ReadAllLines(Path.Combine(dir, "config.ini"));
             for(int i = 0;i<lines.Length;i++)
             {
                 string[] parts = lines[i].Split('=');
@@ -191,7 +191,7 @@ namespace _6obcyManager
                 var stateButton = driver.FindElementById("intro-interface-location-button");
                 stateButton.Click();
 
-                LoadConfig();
+                LoadConfig(dir);
 
                 var malopolska = driver.FindElementByClassName("location-id-" + regionStr);
                 malopolska.Click();
