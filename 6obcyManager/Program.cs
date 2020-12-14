@@ -10,6 +10,7 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 
 using System.Media;
+using System.IO;
 
 namespace _6obcyManager
 {
@@ -46,8 +47,132 @@ namespace _6obcyManager
 
         }
 
+        struct Response
+        {
+            public string source; // Response to?
+            public string response; // What to respond
+            public Types type;
+
+            public enum Types
+            {
+                None,
+                Command,
+                Contains,
+                Equals
+            }
+
+            public static Types ParseType(char c)
+            {
+                switch (c)
+                {
+                    // event
+                    case '$':
+                        return Types.Command;
+
+                    case 'C':
+                        return Types.Contains;
+
+                    case '=':
+                        return Types.Equals;
+
+                    default:
+                        return Types.None;
+                }
+            }
+        }
+
+        static List<Response> responses;
+
+        static void ParseString(string line)
+        {
+            Response.Types type = Response.ParseType(line[0]);
+            line = line.Remove(0, 1);
+
+            string source, response;
+            source = response = "";
+            bool quote = false;
+            bool part = false;
+            for (int i = 0;i<line.Length;i++)
+            {
+                if(line[i] == '\"')
+                {
+                    quote = !quote;
+                    continue;
+                }
+                if(!quote && line[i] == ':')
+                {
+                    part = true;
+                    continue;
+                }
+
+                if(quote)
+                {
+                    if(part)
+                    {
+                        response += line[i];
+                    }
+                    else
+                    {
+                        source += line[i];
+                    }
+                }
+            }
+
+            responses.Add(new Response { source = source, response = response, type = type });
+        }
+
+        static void ParseStrings()
+        {
+            responses = new List<Response>();
+            string[] lines = File.ReadAllLines("strings.txt");
+            for(int i = 0;i<lines.Length;i++)
+            { 
+                ParseString(lines[i]);
+            }
+        }
+
+        static Dictionary<string, string> regions = new Dictionary<string, string>
+        {
+            { "slask", "7" },
+            { "malopolska", "12" },
+        };
+
+        static bool ParseConfigLine(string header, string data)
+        {
+            switch (header)
+            {
+                case "region":
+                    try
+                    {
+                        regionStr = regions[data];
+                    }
+                    catch(Exception e)
+                    {
+                        Debug.FatalError("Region " + data + " not found in database", 1, 2000);
+                    }
+                    return true;
+
+                default:
+                    Debug.LogError("Unknown config line header " + header);
+                    return false;
+            }
+        }
+
+        static void LoadConfig()
+        {
+            string[] lines = File.ReadAllLines("config.ini");
+            for(int i = 0;i<lines.Length;i++)
+            {
+                string[] parts = lines[i].Split('=');
+                ParseConfigLine(parts[0], parts[1]);
+            }
+        }
+
+        static string regionStr = "12"; // małopolska
         static void Main(string[] args)
         {
+            ParseStrings();
+
             SoundPlayer alert = new SoundPlayer("alert.wav");
             SoundPlayer error = new SoundPlayer("error.wav");
 
@@ -61,7 +186,9 @@ namespace _6obcyManager
                 var stateButton = driver.FindElementById("intro-interface-location-button");
                 stateButton.Click();
 
-                var malopolska = driver.FindElementByClassName("location-id-12");
+                LoadConfig();
+
+                var malopolska = driver.FindElementByClassName("location-id-" + regionStr);
                 malopolska.Click();
 
                 var startbutton = driver.FindElementById("intro-start");
@@ -76,6 +203,8 @@ namespace _6obcyManager
 
                 while (true)
                 {
+
+
 
                     try
                     {
@@ -138,7 +267,7 @@ namespace _6obcyManager
                             }
                             else
                             {
-                                textInput.SendKeys("Hej M19, Km?\n");
+                                textInput.SendKeys("Hej, M19 Km?\n");
                             }
                             int count = chatBox.FindElements(By.ClassName("log-msg")).Count;
 
@@ -146,7 +275,7 @@ namespace _6obcyManager
                             while (count == chatBox.FindElements(By.ClassName("log-msg")).Count)
                             {
 
-                                if ((DateTime.Now - startTime).Seconds > 10)
+                                if ((DateTime.Now - startTime).Seconds > 10 && driver.FindElement(By.Id("log-stranger-typing")).GetAttribute("style") == "display: none;")
                                 {
                                     Disconnect(driver);
                                     disconnected = true;
